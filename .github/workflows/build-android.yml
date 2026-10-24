@@ -101,11 +101,21 @@ jobs:
           godot --headless --editor --path . --import
           godot --headless --editor --path . --quit
 
+      
       - name: Export Android APK
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
         run: |
+          export PATH="$ANDROID_HOME/platform-tools:$PATH"
+          adb kill-server || true
+          adb start-server
           godot --headless --path . \
             --export-debug "Android" \
             build/FamilyQuestCharacterCreator.apk
+          test -s build/FamilyQuestCharacterCreator.apk
+          ls -lh build/FamilyQuestCharacterCreator.apk
+
 
           test -s build/FamilyQuestCharacterCreator.apk
           file build/FamilyQuestCharacterCreator.apk
