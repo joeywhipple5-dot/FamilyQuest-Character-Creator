@@ -1,0 +1,35 @@
+name: Build Character Creator Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download project
+        uses: actions/checkout@v4
+
+      - name: Install Godot 4.3
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          chmod +x Godot_v4.3-stable_linux.x86_64
+          sudo mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
+
+      - name: Check project
+        run: godot --headless --path . --editor --quit
+
+      - name: Upload project for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: FamilyQuest-Character-Creator-Project
+          path: |
+            project.godot
+            scenes/
+            scripts/
+            README.md
