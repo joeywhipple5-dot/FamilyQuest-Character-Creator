@@ -1,0 +1,466 @@
+{
+  "project": "Family Quest Character Creator",
+  "engine": "Godot 4.3",
+  "playable_heroes": [
+    {
+      "name": "Male Warrior",
+      "category": "playable_hero",
+      "class": "Warrior",
+      "gender_option": "Male",
+      "role": "Tank and melee damage",
+      "weapons": [
+        "Swords",
+        "Axes",
+        "Shields"
+      ],
+      "abilities": [
+        "Shield Bash",
+        "Whirlwind",
+        "Iron Guard"
+      ],
+      "evolution_move": "Titan's Wrath",
+      "asset_status": "placeholder preview in starter; finished model pending"
+    },
+    {
+      "name": "Female Warrior",
+      "category": "playable_hero",
+      "class": "Warrior",
+      "gender_option": "Female",
+      "role": "Tank and melee damage",
+      "weapons": [
+        "Swords",
+        "Axes",
+        "Shields"
+      ],
+      "abilities": [
+        "Shield Bash",
+        "Whirlwind",
+        "Iron Guard"
+      ],
+      "evolution_move": "Titan's Wrath",
+      "asset_status": "placeholder preview in starter; finished model pending"
+    },
+    {
+      "name": "Male Mage",
+      "category": "playable_hero",
+      "class": "Mage",
+      "gender_option": "Male",
+      "role": "Ranged magic damage",
+      "weapons": [
+        "Staves",
+        "Spellbooks"
+      ],
+      "abilities": [
+        "Firebolt",
+        "Frost Nova",
+        "Arcane Burst"
+      ],
+      "evolution_move": "Arcane Cataclysm",
+      "asset_status": "placeholder preview in starter; finished model pending"
+    },
+    {
+      "name": "Female Mage",
+      "category": "playable_hero",
+      "class": "Mage",
+      "gender_option": "Female",
+      "role": "Ranged magic damage",
+      "weapons": [
+        "Staves",
+        "Spellbooks"
+      ],
+      "abilities": [
+        "Firebolt",
+        "Frost Nova",
+        "Arcane Burst"
+      ],
+      "evolution_move": "Arcane Cataclysm",
+      "asset_status": "placeholder preview in starter; finished model pending"
+    },
+    {
+      "name": "Male Rogue",
+      "category": "playable_hero",
+      "class": "Rogue",
+      "gender_option": "Male",
+      "role": "Agile melee damage",
+      "weapons": [
+        "Daggers",
+        "Short swords"
+      ],
+      "abilities": [
+        "Shadowstep",
+        "Poison Strike",
+        "Evasive Roll"
+      ],
+      "evolution_move": "Phantom Execution",
+      "asset_status": "placeholder preview in starter; finished model pending"
+    },
+    {
+      "name": "Female Rogue",
+      "category": "playable_hero",
+      "class": "Rogue",
+      "gender_option": "Female",
+      "role": "Agile melee damage",
+      "weapons": [
+        "Daggers",
+        "Short swords"
+      ],
+      "abilities": [
+        "Shadowstep",
+        "Poison Strike",
+        "Evasive Roll"
+      ],
+      "evolution_move": "Phantom Execution",
+      "asset_status": "placeholder preview in starter; finished model pending"
+    },
+    {
+      "name": "Male Druid",
+      "category": "playable_hero",
+      "class": "Druid",
+      "gender_option": "Male",
+      "role": "Healing and nature magic",
+      "weapons": [
+        "Nature staves",
+        "Living branches"
+      ],
+      "abilities": [
+        "Healing Bloom",
+        "Thorn Snare",
+        "Nature's Wrath"
+      ],
+      "evolution_move": "Ancient Guardian",
+      "asset_status": "placeholder preview in starter; finished model pending"
+    },
+    {
+      "name": "Female Druid",
+      "category": "playable_hero",
+      "class": "Druid",
+      "gender_option": "Female",
+      "role": "Healing and nature magic",
+      "weapons": [
+        "Nature staves",
+        "Living branches"
+      ],
+      "abilities": [
+        "Healing Bloom",
+        "Thorn Snare",
+        "Nature's Wrath"
+      ],
+      "evolution_move": "Ancient Guardian",
+      "asset_status": "placeholder preview in starter; finished model pending"
+    },
+    {
+      "name": "Male Ranger",
+      "category": "playable_hero",
+      "class": "Ranger",
+      "gender_option": "Male",
+      "role": "Ranged damage and tracking",
+      "weapons": [
+        "Bows",
+        "Dual blades"
+      ],
+      "abilities": [
+        "Power Shot",
+        "Trap",
+        "Volley"
+      ],
+      "evolution_move": "Storm of Arrows",
+      "asset_status": "placeholder preview in starter; finished model pending"
+    },
+    {
+      "name": "Female Ranger",
+      "category": "playable_hero",
+      "class": "Ranger",
+      "gender_option": "Female",
+      "role": "Ranged damage and tracking",
+      "weapons": [
+        "Bows",
+        "Dual blades"
+      ],
+      "abilities": [
+        "Power Shot",
+        "Trap",
+        "Volley"
+      ],
+      "evolution_move": "Storm of Arrows",
+      "asset_status": "placeholder preview in starter; finished model pending"
+    }
+  ],
+  "bosses": [
+    {
+      "name": "Infernax the Eight-Horned",
+      "category": "boss",
+      "type": "Fire elemental demon",
+      "design_requirements": [
+        "Six arms",
+        "Eight horns",
+        "Fire and ember elemental appearance"
+      ],
+      "region": "Ember Abyss",
+      "combat_notes": [
+        "Six independently attacking arms"
+      ],
+      "phases": [
+        "Awakening",
+        "Eight Flames",
+        "Inferno Rage"
+      ],
+      "replay_modes": [
+        "Story",
+        "Veteran",
+        "Nightmare"
+      ],
+      "rewards": [
+        "Infernal gear",
+        "Demon Horn Shards"
+      ],
+      "asset_status": "preserve established design; model implementation pending verification"
+    },
+    {
+      "name": "Mossjaw",
+      "category": "boss",
+      "type": "Moss-covered forest monster",
+      "region": "Hearthvale / Whispering Woods",
+      "quest": "Mossjaw's Challenge",
+      "rewards": {
+        "xp": 150,
+        "silver": 200
+      },
+      "asset_status": "existing quest reference; verify current project implementation"
+    },
+    {
+      "name": "Grukk, the Hollowfang Chief",
+      "category": "boss",
+      "type": "Goblin warlord",
+      "attacks": [
+        "Heavy axe swings",
+        "Charging attacks",
+        "Calls goblin reinforcements"
+      ],
+      "asset_status": "proposed"
+    },
+    {
+      "name": "Bramblemaw, the Ancient Troll",
+      "category": "boss",
+      "type": "Moss-covered forest troll",
+      "attacks": [
+        "Ground slam",
+        "Sweeping arms",
+        "Root traps"
+      ],
+      "asset_status": "proposed"
+    },
+    {
+      "name": "The Gravewarden",
+      "category": "boss",
+      "type": "Undead armored guardian",
+      "attacks": [
+        "Sword combos",
+        "Summoned skeletons",
+        "Spectral shockwaves"
+      ],
+      "asset_status": "proposed"
+    },
+    {
+      "name": "Ashkar, the Ember Tyrant",
+      "category": "boss",
+      "type": "Volcanic dragon",
+      "attacks": [
+        "Fire breath",
+        "Wing gusts",
+        "Lava eruptions"
+      ],
+      "asset_status": "proposed"
+    },
+    {
+      "name": "The Blighted Elder",
+      "category": "boss",
+      "type": "Corrupted ancient guardian",
+      "attacks": [
+        "Root cages",
+        "Corruption waves",
+        "Summoned thorn creatures"
+      ],
+      "asset_status": "proposed"
+    }
+  ],
+  "mobs": [
+    {
+      "name": "Goblin Scout",
+      "category": "mob",
+      "combat_style": "Melee",
+      "combat_notes": "Fast, weak attacks",
+      "region": "Hearthvale",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Goblin Warrior",
+      "category": "mob",
+      "combat_style": "Melee",
+      "combat_notes": "Blocks and strikes",
+      "region": "Hearthvale",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Goblin Archer",
+      "category": "mob",
+      "combat_style": "Ranged",
+      "combat_notes": "Shoots from a distance",
+      "region": "Hearthvale",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Goblin Shaman",
+      "category": "mob",
+      "combat_style": "Support caster",
+      "combat_notes": "Magic bolts and enemy buffs",
+      "region": "Hearthvale",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Thornback Boar",
+      "category": "mob",
+      "combat_style": "Beast",
+      "combat_notes": "Charges and knocks players back",
+      "region": "Hearthvale",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Webstalker Spider",
+      "category": "mob",
+      "combat_style": "Ambusher",
+      "combat_notes": "Bites and slows targets with webs",
+      "region": "Hearthvale",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Lost Skeleton",
+      "category": "mob",
+      "combat_style": "Undead melee",
+      "combat_notes": "Slow, relentless attacks",
+      "region": "Hearthvale",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Forest Wolf",
+      "category": "mob",
+      "combat_style": "Pack beast",
+      "combat_notes": "Pack attacks and quick bites",
+      "region": "Deepwood",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Corrupted Treant",
+      "category": "mob",
+      "combat_style": "Corrupted nature",
+      "combat_notes": "Heavy hits and root attacks",
+      "region": "Blighted Forest",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Cave Bat Swarm",
+      "category": "mob",
+      "combat_style": "Flying swarm",
+      "combat_notes": "Fast flying attacks",
+      "region": "Crystal Caverns",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Stone Golem",
+      "category": "mob",
+      "combat_style": "Construct",
+      "combat_notes": "Slow, high defense",
+      "region": "Ancient Ruins",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Skeleton Archer",
+      "category": "mob",
+      "combat_style": "Undead ranged",
+      "combat_notes": "Long-range arrows",
+      "region": "Haunted Ruins",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Wraith",
+      "category": "mob",
+      "combat_style": "Spectral",
+      "combat_notes": "Teleporting spectral attacks",
+      "region": "Haunted Ruins",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Orc Brute",
+      "category": "mob",
+      "combat_style": "Orc melee",
+      "combat_notes": "Heavy melee and knockback",
+      "region": "Orc Stronghold",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Orc Berserker",
+      "category": "mob",
+      "combat_style": "Orc melee",
+      "combat_notes": "Rapid aggressive attacks",
+      "region": "Orc Stronghold",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Fire Imp",
+      "category": "mob",
+      "combat_style": "Fire creature",
+      "combat_notes": "Ranged fire attacks",
+      "region": "Volcanic Wastes",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Lava Hound",
+      "category": "mob",
+      "combat_style": "Fire beast",
+      "combat_notes": "Charges and burning bites",
+      "region": "Volcanic Wastes",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Frost Wolf",
+      "category": "mob",
+      "combat_style": "Ice beast",
+      "combat_notes": "Ice attacks and slowing",
+      "region": "Frozen Highlands",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Ice Golem",
+      "category": "mob",
+      "combat_style": "Ice construct",
+      "combat_notes": "Heavy strikes and ice waves",
+      "region": "Frozen Highlands",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Blightling",
+      "category": "mob",
+      "combat_style": "Corrupted creature",
+      "combat_notes": "Small corrupted creature attacks",
+      "region": "Blighted Forest",
+      "asset_status": "planned"
+    },
+    {
+      "name": "Corrupted Stag",
+      "category": "mob",
+      "combat_style": "Corrupted beast",
+      "combat_notes": "Charging attacks and antlers",
+      "region": "Blighted Forest",
+      "asset_status": "planned"
+    }
+  ],
+  "rules": [
+    "Infernax is a six-armed, eight-horned fire elemental demon; do not redesign these traits.",
+    "Mossjaw remains the existing Hearthvale / Whispering Woods boss quest reference.",
+    "When a hero's HP reaches zero, clamp HP to zero and enter the death/defeat flow."
+  ],
+  "counts": {
+    "playable_hero_variants": 10,
+    "bosses": 7,
+    "mobs": 21
+  }
+}
