@@ -1,8 +1,9 @@
-
 extends Control
 
-# Family Quest Character Creator - Godot 4.3
-# Deploy the backend and enter its HTTPS URL before generating models.
+# Family Quest Character Creator
+# Godot 4.3
+# Existing GLB import and backend generation retained.
+# Added master roster selection for heroes, bosses, and mobs.
 
 var preview_root: Node3D
 var model_root: Node3D
@@ -14,6 +15,7 @@ var prompt_input: TextEdit
 var class_select: OptionButton
 var gender_select: OptionButton
 var kind_select: OptionButton
+var roster_select: OptionButton
 var generate_button: Button
 var import_dialog: FileDialog
 
@@ -25,11 +27,14 @@ var busy := false
 var current_task_id := ""
 var generated_name := "FamilyQuest_Model"
 
+var roster_entries: Array[Dictionary] = []
+
 
 func _ready() -> void:
     _build_interface()
     _show_test_model()
-    _set_status("Ready. Enter your backend URL, then generate or import a GLB model.")
+    _load_master_roster()
+    _set_status("Ready. Choose a roster entry, generate a model, or import a GLB.")
 
 
 func _build_interface() -> void:
@@ -72,7 +77,6 @@ func _build_interface() -> void:
 
     server_url_input = LineEdit.new()
     server_url_input.placeholder_text = "https://your-deployed-backend.example"
-    server_url_input.text = ""
     server_url_input.clear_button_enabled = true
     page.add_child(server_url_input)
 
@@ -118,6 +122,17 @@ func _build_interface() -> void:
     kind_select.item_selected.connect(_on_kind_changed)
     page.add_child(kind_select)
 
+    var roster_label := Label.new()
+    roster_label.text = "MASTER ROSTER — HEROES, BOSSES AND MOBS"
+    page.add_child(roster_label)
+
+    roster_select = OptionButton.new()
+    roster_select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    roster_select.add_item("Loading master roster...")
+    roster_select.disabled = true
+    roster_select.item_selected.connect(_on_roster_selected)
+    page.add_child(roster_select)
+
     var name_label := Label.new()
     name_label.text = "Asset name"
     page.add_child(name_label)
@@ -132,10 +147,10 @@ func _build_interface() -> void:
     page.add_child(prompt_label)
 
     prompt_input = TextEdit.new()
-    prompt_input.custom_minimum_size = Vector2(0, 92)
-    prompt_input.placeholder_text = "Describe armor, materials, colors, face, equipment, silhouette, and fantasy style..."
+    prompt_input.custom_minimum_size = Vector2(0, 120)
+    prompt_input.placeholder_text = "Describe armor, materials, colors, face, equipment and silhouette..."
     prompt_input.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
-    prompt_input.text = "Stylized high-quality fantasy hero, detailed layered armor and leather, readable silhouette, full body, neutral standing pose, game-ready 3D model, clean topology, no base or text."
+    prompt_input.text = _default_hero_prompt()
     page.add_child(prompt_input)
 
     var actions := HBoxContainer.new()
@@ -158,7 +173,7 @@ func _build_interface() -> void:
     status_label = Label.new()
     status_label.text = "Ready"
     status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-    status_label.custom_minimum_size = Vector2(0, 42)
+    status_label.custom_minimum_size = Vector2(0, 48)
     status_label.add_theme_font_size_override("font_size", 13)
     page.add_child(status_label)
 
@@ -266,6 +281,172 @@ func _show_test_model() -> void:
     model_root.add_child(ground)
 
 
+func _default_hero_prompt() -> String:
+    return "Stylized high-quality fantasy hero, detailed layered armor and leather, readable silhouette, full body, neutral standing pose, game-ready 3D model, clean topology, no base or text."
+
+
+# --------------------------------------------------
+# MASTER ROSTER
+# --------------------------------------------------
+
+func _load_master_roster() -> void:
+    roster_entries.clear()
+
+    var file_path := "res://data/family_quest_master_roster.json"
+
+    if not FileAccess.file_exists(file_path):
+        roster_select.clear()
+        roster_select.add_item("Roster file not found")
+        roster_select.disabled = true
+        _set_status("Missing data/family_quest_master_roster.json")
+        return
+
+    var file := FileAccess.open(file_path, FileAccess.READ)
+
+    if file == null:
+        roster_select.clear()
+        roster_select.add_item("Could not open roster")
+        roster_select.disabled = true
+        _set_status("Could not open the master roster file.")
+        return
+
+    var parsed = JSON.parse_string(file.get_as_text())
+    file.close()
+
+    if not (parsed is Dictionary):
+        roster_select.clear()
+        roster_select.add_item("Invalid roster JSON")
+        roster_select.disabled = true
+        _set_status("The master roster JSON could not be parsed.")
+        return
+
+    # The JSON uses the key "playable_heroes".
+    for entry in parsed.get("playable_heroes", []):
+        if entry is Dictionary:
+            var hero: Dictionary = entry.duplicate(true)
+            hero["_roster_type"] = "Hero"
+            roster_entries.append(hero)
+
+    for entry in parsed.get("bosses", []):
+        if entry is Dictionary:
+            var boss: Dictionary = entry.duplicate(true)
+            boss["_roster_type"] = "Boss"
+            roster_entries.append(boss)
+
+    for entry in parsed.get("mobs", []):
+        if entry is Dictionary:
+            var mob: Dictionary = entry.duplicate(true)
+            mob["_roster_type"] = "Mob"
+            roster_entries.append(mob)
+
+    roster_select.clear()
+    roster_select.add_item("Choose a hero, boss, or mob")
+
+    if roster_entries.is_empty():
+        roster_select.add_item("No roster entries found")
+        roster_select.disabled = true
+        _set_status("No entries were found in the master roster.")
+        return
+
+    for entry in roster_entries:
+        var entry_type := str(entry.get("_roster_type", "Asset"))
+        var entry_name := str(entry.get("name", "Unnamed asset"))
+        roster_select.add_item(entry_type + " — " + entry_name)
+
+    roster_select.disabled = false
+    roster_select.select(0)
+
+    _set_status(
+        "Master roster loaded: " +
+        str(roster_entries.size()) +
+        " entries."
+    )
+
+
+func _on_roster_selected(index: int) -> void:
+    # Dropdown item zero is the instruction text.
+    var entry_index := index - 1
+
+    if entry_index < 0 or entry_index >= roster_entries.size():
+        return
+
+    var entry: Dictionary = roster_entries[entry_index]
+    var entry_type := str(entry.get("_roster_type", "Hero"))
+    var entry_name := str(entry.get("name", "New Asset"))
+
+    name_input.text = entry_name
+
+    if entry_type == "Hero":
+        kind_select.select(0)
+        _on_kind_changed(0)
+
+        var hero_class := str(entry.get("class", "Warrior"))
+        var body_style := str(entry.get("gender_option", "Male"))
+
+        _select_option_text(class_select, hero_class)
+        _select_option_text(gender_select, body_style)
+    else:
+        # Bosses and mobs use the existing enemy generation pathway.
+        kind_select.select(1)
+        _on_kind_changed(1)
+
+    prompt_input.text = _make_roster_prompt(entry)
+
+    _set_status(
+        "Selected " + entry_type + ": " + entry_name +
+        ". Review the description before generating."
+    )
+
+
+func _select_option_text(
+    option: OptionButton,
+    desired_text: String
+) -> void:
+    for i in range(option.item_count):
+        if option.get_item_text(i).to_lower() == desired_text.to_lower():
+            option.select(i)
+            return
+
+
+func _make_roster_prompt(entry: Dictionary) -> String:
+    var parts: Array[String] = []
+
+    var entry_name := str(entry.get("name", "fantasy asset"))
+    var entry_type := str(entry.get("_roster_type", "Asset"))
+
+    parts.append(
+        "Create an original Family Quest fantasy RPG " +
+        entry_type.to_lower() + " named " + entry_name + "."
+    )
+
+    # Include all design details from the roster.
+    for key in entry.keys():
+        if key in ["name", "category", "asset_status", "_roster_type"]:
+            continue
+
+        var value = entry[key]
+        var value_text := ""
+
+        if value is Dictionary or value is Array:
+            value_text = JSON.stringify(value)
+        else:
+            value_text = str(value)
+
+        parts.append(str(key) + ": " + value_text)
+
+    parts.append(
+        "Use detailed fantasy materials, a readable silhouette, " +
+        "high-quality stylized 3D art, full body when appropriate, " +
+        "and a neutral presentation pose. No text or watermark."
+    )
+
+    return "\n".join(parts)
+
+
+# --------------------------------------------------
+# CREATION TYPE
+# --------------------------------------------------
+
 func _on_kind_changed(index: int) -> void:
     class_select.disabled = index != 0
     gender_select.disabled = index != 0
@@ -275,19 +456,28 @@ func _on_kind_changed(index: int) -> void:
     elif index == 2:
         prompt_input.text = "Fantasy game prop, detailed readable shape, high-quality materials, centered isolated object, game-ready 3D model, no text."
     else:
-        prompt_input.text = "Stylized high-quality fantasy hero, detailed layered armor and leather, readable silhouette, full body, neutral standing pose, game-ready 3D model, no base or text."
+        prompt_input.text = _default_hero_prompt()
 
+
+# --------------------------------------------------
+# BACKEND MODEL GENERATION
+# --------------------------------------------------
 
 func _generate_model() -> void:
     if busy:
         return
 
     var base_url := server_url_input.text.strip_edges().trim_suffix("/")
-    if base_url.is_empty() or not (base_url.begins_with("https://") or base_url.begins_with("http://localhost")):
+
+    if base_url.is_empty() or not (
+        base_url.begins_with("https://") or
+        base_url.begins_with("http://localhost")
+    ):
         _set_status("Enter your deployed backend HTTPS URL first.")
         return
 
     var description := prompt_input.text.strip_edges()
+
     if description.length() < 5:
         _set_status("Enter a longer description for the model.")
         return
@@ -304,6 +494,7 @@ func _generate_model() -> void:
         final_prompt += ", prop for the Family Quest fantasy RPG"
 
     generated_name = name_input.text.strip_edges()
+
     if generated_name.is_empty():
         generated_name = "FamilyQuest_Model"
 
@@ -317,6 +508,7 @@ func _generate_model() -> void:
     }
 
     var headers := PackedStringArray(["Content-Type: application/json"])
+
     var request_error := generate_http.request(
         base_url + "/generate",
         headers,
@@ -368,6 +560,7 @@ func _generate_model() -> void:
 
         var state := str(status_data.get("status", "unknown")).to_lower()
         var progress := int(status_data.get("progress", 0))
+
         _set_status("Generating model: " + str(progress) + "% • " + state)
 
         if state == "success":
@@ -403,6 +596,7 @@ func _download_generated_model(base_url: String, task_id: String) -> void:
         return
 
     var safe_name := generated_name.to_snake_case().validate_filename()
+
     if safe_name.is_empty():
         safe_name = "family_quest_model"
 
@@ -419,6 +613,10 @@ func _download_generated_model(base_url: String, task_id: String) -> void:
     _load_glb(path)
     _finish_busy("Model downloaded and saved in app storage: " + path)
 
+
+# --------------------------------------------------
+# GLB IMPORT
+# --------------------------------------------------
 
 func _open_import_dialog() -> void:
     import_dialog.popup_centered(Vector2i(800, 600))
@@ -452,9 +650,13 @@ func _frame_model(imported_scene: Node3D) -> void:
 
     for node in meshes:
         var mesh_node := node as MeshInstance3D
+
         if mesh_node.mesh != null:
             var mesh_bounds := mesh_node.mesh.get_aabb()
-            var transformed := mesh_node.global_transform * Transform3D(Basis.IDENTITY, mesh_bounds.position)
+            var transformed := mesh_node.global_transform * Transform3D(
+                Basis.IDENTITY,
+                mesh_bounds.position
+            )
             var world_box := AABB(transformed.origin, mesh_bounds.size)
 
             if not found_mesh:
@@ -466,11 +668,13 @@ func _frame_model(imported_scene: Node3D) -> void:
     if found_mesh:
         var center := bounds.get_center()
         imported_scene.position -= center
+
         camera.position = Vector3(
             0,
             maxf(bounds.size.y * 0.55, 1.0),
             maxf(bounds.size.length() * 0.9, 3.0)
         )
+
         camera.look_at(Vector3.ZERO, Vector3.UP)
 
 
@@ -482,6 +686,10 @@ func _clear_model() -> void:
         model_root.remove_child(child)
         child.queue_free()
 
+
+# --------------------------------------------------
+# STATUS
+# --------------------------------------------------
 
 func _finish_busy(message: String) -> void:
     busy = false
