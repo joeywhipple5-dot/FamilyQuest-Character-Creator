@@ -115,11 +115,9 @@ jobs:
 
       
       
+      
       - name: Diagnose and Export Android APK
         run: |
-          godot --headless --path . --editor --quit \
-            --verbose 2>&1 | tee build/godot-export-diagnostics.log || true
-
           godot --headless --path . \
             --verbose \
             --export-debug "Android" \
@@ -135,17 +133,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Verify APK
-        run: test -s build/FamilyQuestCharacterCreator.apk
-
-      - name: Upload actual APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: FamilyQuest-Character-Creator-Android-APK
-          path: build/FamilyQuestCharacterCreator.apk
-          if-no-files-found: error
-
-
-
+        run: |
           test -s build/FamilyQuestCharacterCreator.apk
           file build/FamilyQuestCharacterCreator.apk
           ls -lh build/FamilyQuestCharacterCreator.apk
