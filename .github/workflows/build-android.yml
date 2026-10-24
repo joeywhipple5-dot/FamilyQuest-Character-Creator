@@ -1,3 +1,4 @@
+
 name: Build Character Creator Android APK
 
 on:
@@ -5,6 +6,9 @@ on:
   push:
     branches:
       - main
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -14,22 +18,100 @@ jobs:
       - name: Download project
         uses: actions/checkout@v4
 
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "cmdline-tools;latest" \
+            "cmake;3.10.2.4988404" \
+            "ndk;23.2.8568313"
+
       - name: Install Godot 4.3
         run: |
-          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          wget -q \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
           unzip -q Godot_v4.3-stable_linux.x86_64.zip
           chmod +x Godot_v4.3-stable_linux.x86_64
           sudo mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
+          godot --version
 
-      - name: Check project
-        run: godot --headless --path . --editor --quit
+      - name: Install Godot export templates
+        run: |
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
+          wget -q \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz \
+            -O templates.tpz
+          mkdir template_files
+          unzip -q templates.tpz -d template_files
+          cp template_files/templates/* \
+            "$HOME/.local/share/godot/export_templates/4.3.stable/"
 
-      - name: Upload project for inspection
+      - name: Configure Android export
+        run: |
+          cat > export_presets.cfg <<'EOF'
+          [preset.0]
+          name="Android"
+          platform="Android"
+          runnable=true
+          dedicated_server=false
+          custom_features=""
+          export_filter="all_resources"
+          include_filter=""
+          exclude_filter=""
+          export_path="build/FamilyQuestCharacterCreator.apk"
+          encryption_include_filters=""
+          encryption_exclude_filters=""
+          encrypt_pck=false
+          encrypt_directory=false
+
+          [preset.0.options]
+          custom_template/debug=""
+          custom_template/release=""
+          gradle_build/use_gradle_build=false
+          gradle_build/gradle_build_directory=""
+          gradle_build/android_source_template=""
+          gradle_build/compress_native_libraries=false
+          architectures/armeabi-v7a=false
+          architectures/arm64-v8a=true
+          architectures/x86=false
+          architectures/x86_64=false
+          EOF
+
+          mkdir -p build
+
+      - name: Import and validate project
+        run: |
+          godot --headless --editor --path . --import
+          godot --headless --editor --path . --quit
+
+      - name: Export Android APK
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+        run: |
+          godot --headless --path . \
+            --export-debug "Android" \
+            build/FamilyQuestCharacterCreator.apk
+
+          test -s build/FamilyQuestCharacterCreator.apk
+          file build/FamilyQuestCharacterCreator.apk
+          ls -lh build/FamilyQuestCharacterCreator.apk
+
+      - name: Upload actual APK
         uses: actions/upload-artifact@v4
         with:
-          name: FamilyQuest-Character-Creator-Project
-          path: |
-            project.godot
-            scenes/
-            scripts/
-            README.md
+          name: FamilyQuest-Character-Creator-Android-APK
+          path: build/FamilyQuestCharacterCreator.apk
+          if-no-files-found: error
+          retention-days: 14
