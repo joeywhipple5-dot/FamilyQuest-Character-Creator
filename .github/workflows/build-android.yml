@@ -37,6 +37,22 @@ jobs:
             "cmake;3.10.2.4988404" \
             "ndk;23.2.8568313"
 
+      - name: Generate Android Debug Keystore
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.android/debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+
       - name: Install Godot 4.3
         run: |
           wget -q \
@@ -88,10 +104,8 @@ jobs:
           architectures/x86_64=false
           package/unique_name="com.whipple.familyquestcharactercreator"
           EOF
-
           mkdir -p build
 
-      
       - name: Configure Android SDK paths
         run: |
           mkdir -p "$HOME/.config/godot"
@@ -107,22 +121,32 @@ jobs:
           test -d "$JAVA_HOME"
           test -d "$ANDROID_HOME"
 
-
       - name: Import and validate project
         run: |
           godot --headless --editor --path . --import
           godot --headless --editor --path . --quit
 
-      
-      
-      
-      - name: Diagnose and Export Android APK
+      - name: Export Android APK
+        id: export
+        shell: bash
         run: |
+          set -o pipefail
           godot --headless --path . \
             --verbose \
             --export-debug "Android" \
             build/FamilyQuestCharacterCreator.apk \
             2>&1 | tee build/android-export.log
+
+      - name: Diagnose Android export configuration
+        if: failure()
+        run: |
+          echo "Checking project and Android export configuration..."
+          godot --headless --editor --path . --verbose --quit \
+            2>&1 | tee build/android-config-diagnostics.log || true
+          echo "Export preset:"
+          cat export_presets.cfg || true
+          echo "Installed export templates:"
+          ls -lah "$HOME/.local/share/godot/export_templates/4.3.stable" || true
 
       - name: Upload diagnostic logs
         if: always()
@@ -131,6 +155,7 @@ jobs:
           name: Android-Export-Diagnostics
           path: build/*.log
           if-no-files-found: warn
+          retention-days: 7
 
       - name: Verify APK
         run: |
