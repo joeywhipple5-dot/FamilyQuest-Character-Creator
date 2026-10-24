@@ -1,11 +1,11 @@
 
 import os
-import asyncio
-from pathlib import Path
+import re
 
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="Family Quest Character Creator API")
@@ -18,101 +18,174 @@ app.add_middleware(
 )
 
 API_KEY = os.getenv("TRIPO_API_KEY", "")
-BASE_URL = "https://api.tripo3d.ai/v2/openapi"
-CACHE = Path("generated_models")
-CACHE.mkdir(exist_ok=True)
+BASE_URL = "https://openapi.tripo3d.com/v3"
+
 
 class GenerateRequest(BaseModel):
-    prompt: str = Field(min_length=5, max_length=2000)
+    prompt: str = Field(min_length=5, max_length=1024)
     name: str = Field(default="New Character", max_length=100)
+
+
+def get_headers():
+    return {"Authorization": f"Bearer {API_KEY}"}
+
 
 @app.get("/health")
 def health():
-    return {"status": "online", "service": "Family Quest Character Creator"}
+    return {
+        "status": "online",
+        "service": "Family Quest Character Creator",
+    }
+
 
 @app.post("/generate")
 async def generate(request: GenerateRequest):
     if not API_KEY:
         raise HTTPException(
             status_code=503,
-            detail="AI service is not configured. Set TRIPO_API_KEY on the server."
+            detail="AI service is not configured.",
         )
 
-    headers = {"Authorization": f"Bearer {API_KEY}"}
     payload = {
-        "type": "text_to_model",
         "prompt": request.prompt,
-        "model_version": "v2.5-20250123",
+        "model": "v3.1-20260211",
         "texture": True,
         "pbr": True,
     }
 
-    async with httpx.AsyncClient(timeout=60) as client:
-        response = await client.post(
-            f"{BASE_URL}/task",
-            headers=headers,
-            json=payload,
-        )
-
-    if response.status_code >= 400:
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                f"{BASE_URL}/generation/text-to-model",
+                headers=get_headers(),
+                json=payload,
+            )
+            response.raise_for_status()
+            result = response.json()
+    except httpx.HTTPStatusError as exc:
         raise HTTPException(
             status_code=502,
-            detail="The AI provider rejected the generation request."
-        )
+            detail="The AI provider rejected the request.",
+        ) from exc
+    except (httpx.RequestError, ValueError) as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not contact the AI provider.",
+        ) from exc
 
-    result = response.json()
     task_id = result.get("data", {}).get("task_id")
     if not task_id:
-        raise HTTPException(status_code=502, detail="No task ID returned.")
+        raise HTTPException(
+            status_code=502,
+            detail="The AI provider did not return a task ID.",
+        )
 
     return {"task_id": task_id, "name": request.name}
+
 
 @app.get("/status/{task_id}")
 async def status(task_id: str):
     if not API_KEY:
-        raise HTTPException(status_code=503, detail="AI service not configured.")
-
-    headers = {"Authorization": f"Bearer {API_KEY}"}
-    async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(
-            f"{BASE_URL}/task/{task_id}",
-            headers=headers,
+        raise HTTPException(
+            status_code=503,
+            detail="AI service is not configured.",
         )
 
-    if response.status_code >= 400:
-        raise HTTPException(status_code=502, detail="Could not check task status.")
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", task_id):
+        raise HTTPException(status_code=400, detail="Invalid task ID.")
 
-    data = response.json().get("data", {})
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(
+                f"{BASE_URL}/tasks/{task_id}",
+                headers=get_headers(),
+            )
+            response.raise_for_status()
+            result = response.json()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not check the AI task.",
+        ) from exc
+    except (httpx.RequestError, ValueError) as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not contact the AI provider.",
+        ) from exc
+
+    data = result.get("data", {})
     output = data.get("output", {})
+
     return {
         "task_id": task_id,
         "status": data.get("status", "unknown"),
         "progress": data.get("progress", 0),
-        "model_url": output.get("pbr_model") or output.get("model"),
+        "model_url": output.get("model_url"),
     }
+
 
 @app.get("/download/{task_id}")
 async def download(task_id: str):
     if not API_KEY:
-        raise HTTPException(status_code=503, detail="AI service not configured.")
-
-    headers = {"Authorization": f"Bearer {API_KEY}"}
-    async with httpx.AsyncClient(timeout=60) as client:
-        response = await client.get(
-            f"{BASE_URL}/task/{task_id}",
-            headers=headers,
+        raise HTTPException(
+            status_code=503,
+            detail="AI service is not configured.",
         )
 
-    if response.status_code >= 400:
-        raise HTTPException(status_code=502, detail="Could not retrieve model.")
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", task_id):
+        raise HTTPException(status_code=400, detail="Invalid task ID.")
 
-    data = response.json().get("data", {})
-    if data.get("status") != "success":
-        raise HTTPException(status_code=409, detail="Model is not ready yet.")
+    try:
+        async with httpx.AsyncClient(
+            timeout=120,
+            follow_redirects=True,
+        ) as client:
+            task_response = await client.get(
+                f"{BASE_URL}/tasks/{task_id}",
+                headers=get_headers(),
+            )
+            task_response.raise_for_status()
+            task_data = task_response.json().get("data", {})
 
-    output = data.get("output", {})
-    model_url = output.get("pbr_model") or output.get("model")
-    if not model_url:
-        raise HTTPException(status_code=502, detail="No model file available.")
+            if task_data.get("status") != "success":
+                raise HTTPException(
+                    status_code=409,
+                    detail="The model is not ready yet.",
+                )
 
-    return {"task_id": task_id, "model_url": model_url}
+            model_url = task_data.get("output", {}).get("model_url")
+            if not model_url:
+                raise HTTPException(
+                    status_code=502,
+                    detail="No model download URL was returned.",
+                )
+
+            model_response = await client.get(model_url)
+            model_response.raise_for_status()
+            model_bytes = model_response.content
+
+    except HTTPException:
+        raise
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not retrieve the generated model.",
+        ) from exc
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="A network error occurred during download.",
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="The AI provider returned an invalid response.",
+        ) from exc
+
+    return Response(
+        content=model_bytes,
+        media_type="model/gltf-binary",
+        headers={
+            "Content-Disposition": 'attachment; filename="family_quest_model.glb"'
+        },
+    )
