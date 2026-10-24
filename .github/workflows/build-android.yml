@@ -114,19 +114,36 @@ jobs:
           godot --headless --editor --path . --quit
 
       
-      - name: Export Android APK
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+      
+      - name: Diagnose and Export Android APK
         run: |
-          export PATH="$ANDROID_HOME/platform-tools:$PATH"
-          adb kill-server || true
-          adb start-server
+          godot --headless --path . --editor --quit \
+            --verbose 2>&1 | tee build/godot-export-diagnostics.log || true
+
           godot --headless --path . \
+            --verbose \
             --export-debug "Android" \
-            build/FamilyQuestCharacterCreator.apk
-          test -s build/FamilyQuestCharacterCreator.apk
-          ls -lh build/FamilyQuestCharacterCreator.apk
+            build/FamilyQuestCharacterCreator.apk \
+            2>&1 | tee build/android-export.log
+
+      - name: Upload diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-Export-Diagnostics
+          path: build/*.log
+          if-no-files-found: warn
+
+      - name: Verify APK
+        run: test -s build/FamilyQuestCharacterCreator.apk
+
+      - name: Upload actual APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FamilyQuest-Character-Creator-Android-APK
+          path: build/FamilyQuestCharacterCreator.apk
+          if-no-files-found: error
+
 
 
           test -s build/FamilyQuestCharacterCreator.apk
